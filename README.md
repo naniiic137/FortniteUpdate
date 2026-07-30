@@ -4,95 +4,94 @@ A Discord bot that monitors Fortnite for game updates (version bumps) and notifi
 
 ## How It Works
 
-Every 30 minutes the bot polls the [Fortnite API](https://fortnite-api.com) for the current game version. When the version string changes, it sends a ping to your Discord channel.
+On a schedule (every 6 hours via **GitHub Actions**), a small script polls the [Fortnite API](https://fortnite-api.com) for the current game build. When the version string changes, it posts an embed to your Discord channel using Discord's REST API, then exits. The last-seen version is stored in `version_data.json`, which the workflow commits back to the repo after each run so it remembers state between runs.
+
+No always-on server is required, so it runs **for free** — no Railway, no credit card.
 
 ## Project Structure
 
 ```
 fortnite-update-bot/
-├── bot.py             # Main bot logic
-├── requirements.txt   # Python dependencies
-├── Procfile           # Railway process config
-├── runtime.txt        # Python version for Railway
-├── .env.example       # Example environment variables
-└── README.md          # This file
+├── check_update.py                    # Scheduled single-shot check (used by GitHub Actions)
+├── bot.py                             # Legacy always-on gateway bot (optional, for Railway/local)
+├── .github/workflows/fortnite-check.yml  # Cron schedule that runs the check
+├── version_data.json                  # Last-seen version (state, committed by the workflow)
+├── requirements.txt                   # Python dependencies
+├── .env.example                       # Example environment variables (local testing)
+└── README.md                          # This file
 ```
 
 ---
 
-## Step-by-Step Setup
+## Step-by-Step Setup (GitHub Actions — free, recommended)
 
 ### 1. Create a Discord Application & Bot
 
 1. Go to https://discord.com/developers/applications
 2. Click **New Application** -> give it a name (e.g. "Fortnite Updates")
 3. Go to the **Bot** tab -> click **Reset Token** -> copy the token
-4. Under **Privileged Gateway Intents**, enable **Message Content Intent**
-5. Go to **OAuth2 > URL Generator**:
+4. Go to **OAuth2 > URL Generator**:
    - Scopes: `bot`
-   - Bot Permissions: `Send Messages`, `Read Messages/View Channels`
+   - Bot Permissions: `Send Messages`, `View Channels`
    - Open the generated URL in your browser and invite the bot to your server
+
+> The bot only sends messages, so no privileged gateway intents are required.
 
 ### 2. Get Your Discord Channel ID
 
 1. Open Discord -> **User Settings > Advanced > Developer Mode** (toggle ON)
 2. Right-click the channel you want notifications in -> **Copy Channel ID**
 
-### 3. Test Locally
+### 3. Add your secrets to GitHub
+
+In your repo on GitHub: **Settings > Secrets and variables > Actions > New repository secret**. Add two:
+
+- `DISCORD_TOKEN` = your bot token
+- `CHANNEL_ID` = your channel ID
+
+### 4. Push the code
 
 ```powershell
-# Create a virtual environment
-python -m venv venv
-.\venv\Scripts\Activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set environment variables
-$env:DISCORD_TOKEN="your_bot_token"
-$env:CHANNEL_ID="your_channel_id"
-
-# Run the bot
-python bot.py
+git add .
+git commit -m "Move to scheduled GitHub Actions check"
+git push
 ```
 
-You should see a "Bot started" message in your Discord channel. Wait for the next check or just test it.
-
-### 4. Deploy to Railway (Free 24/7)
-
-1. Push your code to a GitHub repository:
-   ```powershell
-   git init
-   git add .
-   git commit -m "Initial commit"
-   ```
-2. Go to https://railway.app -> **New Project** -> **Deploy from GitHub repo**
-3. Connect your GitHub account and select the repo
-4. **Do NOT use the Start Command they suggest** -- Railway auto-detects the `Procfile`
-5. Go to the **Variables** tab and add:
-   - `DISCORD_TOKEN` = your bot token
-   - `CHANNEL_ID` = your channel ID
-   - `CHECK_INTERVAL` = `1800` (optional, 30 min)
-6. The bot will deploy and start automatically
-
-**Railway free tier:** $5 of free credits per month. A simple Python bot uses ~$0.50/month, so it stays free indefinitely.
-
-> **Note:** Netlify cannot run a persistent Python bot. Railway is the correct choice.
+The workflow is scheduled to run every 6 hours automatically. You can also trigger it manually to test: **Actions** tab -> **Fortnite Update Check** -> **Run workflow**.
 
 ### 5. Verify It's Working
 
-Check your Discord channel -- the bot sends a startup message. If you want to force a test notification, temporarily restart the bot after changing the `version_data.json` file (or just wait for a real Fortnite update).
+Open the **Actions** tab and watch a run. The logs show the fetched version and whether an update was detected. A Discord message is only sent when the version actually changes (so a normal run with no update is silent). To force a test, edit `version_data.json` to an older version, commit, and run the workflow manually — it will detect the "new" version and post.
+
+### Changing the schedule
+
+Edit the `cron` line in `.github/workflows/fortnite-check.yml`. Cron uses **UTC**. Examples:
+
+- `0 0 * * *` — once a day at 00:00 UTC
+- `0 */6 * * *` — every 6 hours (default)
+- `0 */3 * * *` — every 3 hours
+
+> GitHub's scheduled workflows can be delayed by a few minutes (or occasionally skipped) during peak load — fine for update checks, but not second-precise.
+
+### Test Locally (optional)
+
+```powershell
+pip install -r requirements.txt
+$env:DISCORD_TOKEN="your_bot_token"
+$env:CHANNEL_ID="your_channel_id"
+python check_update.py
+```
 
 ## Environment Variables
 
-| Variable         | Required | Default | Description                            |
-|------------------|----------|---------|----------------------------------------|
-| `DISCORD_TOKEN`  | Yes      | --      | Discord bot token                      |
-| `CHANNEL_ID`     | Yes      | --      | Discord channel ID for notifications   |
-| `CHECK_INTERVAL` | No       | 1800    | Polling interval in seconds (30 min)   |
+| Variable        | Required | Description                          |
+|-----------------|----------|--------------------------------------|
+| `DISCORD_TOKEN` | Yes      | Discord bot token                    |
+| `CHANNEL_ID`    | Yes      | Discord channel ID for notifications |
 
 ## Notes
 
-- The bot only checks for **game version updates** (new builds), not item shop rotations.
-- It uses the free public API at https://fortnite-api.com -- no API key needed.
-- If Fortnite-API is down, the bot logs a warning and retries next cycle.
+- The check only reports **game version updates** (new builds), not item shop rotations.
+- It uses the free public API at https://fortnite-api.com — no API key needed.
+- If Fortnite-API is down, the run logs a warning and simply exits; the next scheduled run tries again.
+- `bot.py` (the old always-on gateway bot) is kept for reference / local use but is no longer needed for hosting.

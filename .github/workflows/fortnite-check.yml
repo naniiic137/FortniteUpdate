@@ -1,0 +1,51 @@
+name: Fortnite Update Check
+
+on:
+  schedule:
+    # Every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: "0 */6 * * *"
+  # Lets you trigger a run manually from the Actions tab to test it
+  workflow_dispatch:
+
+# Needed so the workflow can commit the updated version_data.json back
+permissions:
+  contents: write
+
+# Prevent overlapping runs from racing on the committed state file
+concurrency:
+  group: fortnite-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run update check
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+        run: python check_update.py
+
+      - name: Commit updated version state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version_data.json
+          if git diff --staged --quiet; then
+            echo "No version change to commit."
+          else
+            git commit -m "Update Fortnite version state [skip ci]"
+            git push
+          fi
