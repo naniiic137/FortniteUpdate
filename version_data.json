@@ -1,6 +1,8 @@
 {
-  "version": "++Fortnite+Release-41.30-CL-56430492",
-  "release": "41.30",
-  "cl": "56430492",
-  "checked_at": "2026-08-07T07:34:54.065861+00:00"
+  "fortnite": {
+    "version": "++Fortnite+Release-41.30-CL-56430492",
+    "release": "41.30",
+    "cl": "56430492",
+    "checked_at": "2026-08-07T07:34:54.065861+00:00"
+  }
 }

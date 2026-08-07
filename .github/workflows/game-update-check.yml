@@ -1,4 +1,4 @@
-name: Fortnite Update Check
+name: Game Update Check
 
 on:
   schedule:
@@ -13,7 +13,7 @@ permissions:
 
 # Prevent overlapping runs from racing on the committed state file
 concurrency:
-  group: fortnite-check
+  group: game-update-check
   cancel-in-progress: false
 
 jobs:
@@ -46,6 +46,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No version change to commit."
           else
-            git commit -m "Update Fortnite version state [skip ci]"
+            git commit -m "Update game version state [skip ci]"
             git push
           fi

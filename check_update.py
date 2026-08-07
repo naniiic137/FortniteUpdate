@@ -1,11 +1,13 @@
-"""Single-shot Fortnite update check.
+"""Multi-game update checker.
 
-Runs once, checks the Fortnite build version, and if it changed since the last
-run posts an embed to a Discord channel via the REST API, then exits.
+Runs once, checks each registered game for version changes, and posts an embed
+to a Discord channel via the REST API when an update is detected.
 
-Designed to be triggered on a schedule (e.g. GitHub Actions cron) instead of
-running as an always-on gateway bot. Uses the same DISCORD_TOKEN and CHANNEL_ID
-as the old bot -- no Discord-side changes needed.
+Designed to be triggered on a schedule (e.g. GitHub Actions cron).
+
+Currently supported: Fortnite, VALORANT, CS2.
+Adding a new game: create check_xxx() and xxx_embed() functions, then add an
+entry to the GAMES list at the bottom of this file.
 """
 
 import json
@@ -24,16 +26,18 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-logger = logging.getLogger("fortnite-check")
+logger = logging.getLogger("update-check")
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID", "0")
-VERSION_FILE = "version_data.json"
-AES_URL = "https://fortnite-api.com/v2/aes"
-NEWS_URL = "https://fortnite-api.com/v2/news/br"
+STATE_FILE = "version_data.json"
 DISCORD_API = "https://discord.com/api/v10"
-USER_AGENT = "FortniteUpdateBot/2.0"
+USER_AGENT = "GameUpdateBot/3.0"
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def fetch_json(url):
     resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=15)
@@ -43,38 +47,20 @@ def fetch_json(url):
     return resp.json()
 
 
-def load_cached_version():
-    if os.path.exists(VERSION_FILE):
-        with open(VERSION_FILE) as f:
+def load_state():
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE) as f:
             data = json.load(f)
-        version = data.get("version")
-        logger.info("Loaded cached version: %s", version)
-        return version
-    return None
+        if "version" in data:
+            data = {"fortnite": data}
+            save_state(data)
+        return data
+    return {}
 
 
-def save_version(version, release, cl):
-    data = {
-        "version": version,
-        "release": release,
-        "cl": cl,
-        "checked_at": datetime.now(timezone.utc).isoformat(),
-    }
-    with open(VERSION_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-    logger.info("Saved version: %s", version)
-
-
-def fetch_motd():
-    body = fetch_json(NEWS_URL)
-    if not body:
-        return None, None
-    data = body.get("data") or {}
-    motds = data.get("motds") or []
-    if motds:
-        m = motds[0]
-        return m.get("title"), m.get("body")
-    return None, None
+def save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, indent=2)
 
 
 def send_discord_embed(embed):
@@ -92,28 +78,48 @@ def send_discord_embed(embed):
     return True
 
 
-def build_embed(release, cl):
+# ---------------------------------------------------------------------------
+# Game: Fortnite
+# API: https://fortnite-api.com/v2/aes (free, no key)
+# ---------------------------------------------------------------------------
+
+def fortnite_check():
+    body = fetch_json("https://fortnite-api.com/v2/aes")
+    if not body:
+        return None
+    build_str = (body.get("data") or {}).get("build")
+    if not build_str:
+        return None
+    release, cl = "?", "?"
+    if "Release-" in build_str:
+        parts = build_str.split("Release-")[1].split("-CL-")
+        if len(parts) == 2:
+            release, cl = parts
+    return {"version": build_str, "release": release, "cl": cl}
+
+
+def fortnite_embed(info):
     fields = [
-        {"name": "Release", "value": release, "inline": True},
-        {"name": "Build (CL)", "value": cl, "inline": True},
+        {"name": "Release", "value": info["release"], "inline": True},
+        {"name": "Build (CL)", "value": info["cl"], "inline": True},
     ]
-
-    motd_title, motd_body = fetch_motd()
-    if motd_title:
-        body = motd_body or ""
-        trimmed = body[:250] + ("..." if len(body) > 250 else "")
-        fields.append({
-            "name": "\U0001f4f0 What's New",
-            "value": f"**{motd_title}**\n{trimmed}",
-            "inline": False,
-        })
-
+    news = fetch_json("https://fortnite-api.com/v2/news/br")
+    if news:
+        motds = (news.get("data") or {}).get("motds") or []
+        if motds:
+            title = motds[0].get("title", "")
+            body = motds[0].get("body", "")
+            trimmed = body[:250] + ("..." if len(body) > 250 else "")
+            fields.append({
+                "name": "\U0001f4f0 What's New",
+                "value": f"**{title}**\n{trimmed}",
+                "inline": False,
+            })
     fields.append({
         "name": "\U0001f4d6 Patch Notes",
         "value": "[View on Fortnite News](https://www.fortnite.com/news)",
         "inline": False,
     })
-
     return {
         "title": "\U0001f680 Fortnite Update Detected!",
         "description": "A new Fortnite update is available for download!",
@@ -124,42 +130,158 @@ def build_embed(release, cl):
     }
 
 
+# ---------------------------------------------------------------------------
+# Game: VALORANT
+# API: https://valorant-api.com/v1/version (free, no key)
+# ---------------------------------------------------------------------------
+
+def valorant_check():
+    body = fetch_json("https://valorant-api.com/v1/version")
+    if not body:
+        return None
+    data = body.get("data") or {}
+    version = data.get("version")
+    if not version:
+        return None
+    branch = data.get("branch", "?")
+    release = branch.replace("release-", "") if branch.startswith("release-") else branch
+    build_date = data.get("buildDate", "?")
+    return {"version": version, "release": release, "build_date": build_date}
+
+
+def valorant_embed(info):
+    fields = [
+        {"name": "Version", "value": info["release"], "inline": True},
+        {"name": "Build", "value": info["version"], "inline": True},
+    ]
+    if info.get("build_date") and info["build_date"] != "?":
+        fields.append(
+            {"name": "Build Date", "value": info["build_date"], "inline": True}
+        )
+    fields.append({
+        "name": "\U0001f4d6 Patch Notes",
+        "value": "[View on VALORANT News](https://playvalorant.com/en-us/news/)",
+        "inline": False,
+    })
+    return {
+        "title": "\U0001f680 VALORANT Update Detected!",
+        "description": "A new VALORANT update is available for download!",
+        "color": 0xFD4556,
+        "fields": fields,
+        "footer": {"text": "Check the Riot Client for the update"},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Game: CS2
+# API: Steam ISteamApps/UpToDateCheck (free, no key)
+# ---------------------------------------------------------------------------
+
+def cs2_check():
+    body = fetch_json(
+        "https://api.steampowered.com/ISteamApps/UpToDateCheck/v1/"
+        "?appid=730&version=0"
+    )
+    if not body:
+        return None
+    resp = body.get("response") or {}
+    required = resp.get("required_version")
+    if required is None:
+        return None
+    msg = resp.get("message", "")
+    readable = msg.split(": ", 1)[1] if ": " in msg else str(required)
+    return {"version": str(required), "release": readable}
+
+
+def cs2_embed(info):
+    fields = [
+        {"name": "Version", "value": info["release"], "inline": True},
+        {"name": "Build ID", "value": info["version"], "inline": True},
+    ]
+    news = fetch_json(
+        "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
+        "?appid=730&count=5&maxlength=300&format=json"
+    )
+    if news:
+        items = (news.get("appnews") or {}).get("newsitems") or []
+        for item in items:
+            if "patchnotes" in (item.get("tags") or []):
+                title = item.get("title", "")
+                url = item.get("url", "")
+                fields.append({
+                    "name": "\U0001f4f0 Latest Patch Notes",
+                    "value": f"[{title}]({url})" if url else title,
+                    "inline": False,
+                })
+                break
+    if not any(f["name"] == "\U0001f4f0 Latest Patch Notes" for f in fields):
+        fields.append({
+            "name": "\U0001f4d6 Patch Notes",
+            "value": "[View on Steam](https://store.steampowered.com/news/app/730)",
+            "inline": False,
+        })
+    return {
+        "title": "\U0001f680 CS2 Update Detected!",
+        "description": "A new Counter-Strike 2 update is available!",
+        "color": 0xDE9B35,
+        "fields": fields,
+        "footer": {"text": "Steam will auto-update the game"},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Game registry — add new games here
+# ---------------------------------------------------------------------------
+
+GAMES = [
+    {"slug": "fortnite",  "name": "Fortnite",  "check": fortnite_check,  "embed": fortnite_embed},
+    {"slug": "valorant",  "name": "VALORANT",   "check": valorant_check,  "embed": valorant_embed},
+    {"slug": "cs2",        "name": "CS2",        "check": cs2_check,       "embed": cs2_embed},
+]
+
+
+# ---------------------------------------------------------------------------
+# Main loop — iterates every registered game
+# ---------------------------------------------------------------------------
+
 def main():
     if not DISCORD_TOKEN:
         sys.exit("Missing DISCORD_TOKEN environment variable")
     if CHANNEL_ID in ("0", ""):
         sys.exit("Missing or invalid CHANNEL_ID environment variable")
 
-    body = fetch_json(AES_URL)
-    if not body:
-        logger.error("Could not fetch Fortnite API; skipping this run")
-        return
+    state = load_state()
 
-    data = body.get("data") or {}
-    build_str = data.get("build")
-    if not build_str:
-        logger.warning("No build field in API response")
-        return
+    for game in GAMES:
+        slug = game["slug"]
+        name = game["name"]
+        logger.info("Checking %s...", name)
 
-    version = build_str
-    release, cl = "?", "?"
-    if "Release-" in build_str:
-        parts = build_str.split("Release-")[1].split("-CL-")
-        if len(parts) == 2:
-            release, cl = parts
+        info = game["check"]()
+        if info is None:
+            logger.warning("Could not fetch %s API; skipping", name)
+            continue
 
-    cached = load_cached_version()
-    is_new = cached is not None and version != cached
+        version = info["version"]
+        cached = (state.get(slug) or {}).get("version")
+        is_new = cached is not None and version != cached
 
-    if is_new:
-        logger.info("New version detected: %s (was %s)", version, cached)
-        send_discord_embed(build_embed(release, cl))
-    elif cached is None:
-        logger.info("No cached version yet; seeding state with %s", version)
-    else:
-        logger.info("No update (current: %s)", version)
+        if is_new:
+            logger.info("[%s] New version: %s (was %s)", name, version, cached)
+            send_discord_embed(game["embed"](info))
+        elif cached is None:
+            logger.info("[%s] First run; seeding state with %s", name, version)
+        else:
+            logger.info("[%s] No update (current: %s)", name, version)
 
-    save_version(version, release, cl)
+        state[slug] = {
+            **info,
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    save_state(state)
 
 
 if __name__ == "__main__":
