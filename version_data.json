@@ -3,18 +3,18 @@
     "version": "++Fortnite+Release-41.30-CL-56430492",
     "release": "41.30",
     "cl": "56430492",
-    "checked_at": "2026-08-12T13:20:22.619395+00:00"
+    "checked_at": "2026-08-12T19:08:02.386311+00:00"
   },
   "valorant": {
     "version": "13.02.00.5229475",
     "release": "13.02",
     "build_date": "2026-08-04T00:12:33Z",
-    "checked_at": "2026-08-12T13:20:22.767919+00:00"
+    "checked_at": "2026-08-12T19:08:02.550041+00:00"
   },
   "cs2": {
     "version": "1839676055895877",
     "title": "Counter-Strike 2 Update",
     "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1839676055895877",
-    "checked_at": "2026-08-12T13:20:23.150500+00:00"
+    "checked_at": "2026-08-12T19:08:02.828433+00:00"
   }
 }
