@@ -80,22 +80,48 @@ def send_discord_embed(embed):
 
 # ---------------------------------------------------------------------------
 # Game: Fortnite
-# API: https://fortnite-api.com/v2/aes (free, no key)
+# APIs: /v2/aes (build version) + /v2/news/br (content hash) — both free, no key
+# AES alone only updates with major client patches; the news hash catches
+# content updates, season launches, and hotfixes that don't change AES keys.
 # ---------------------------------------------------------------------------
 
 def fortnite_check():
+    # AES endpoint tracks client build version (major patches only)
+    build_str, release, cl = None, "?", "?"
     body = fetch_json("https://fortnite-api.com/v2/aes")
-    if not body:
+    if body:
+        build_str = (body.get("data") or {}).get("build")
+        if build_str and "Release-" in build_str:
+            parts = build_str.split("Release-")[1].split("-CL-")
+            if len(parts) == 2:
+                release, cl = parts
+
+    # News endpoint tracks content/season updates that don't always change AES
+    news_hash = None
+    motd_title, motd_body = "", ""
+    news = fetch_json("https://fortnite-api.com/v2/news/br")
+    if news:
+        news_data = news.get("data") or {}
+        news_hash = news_data.get("hash")
+        motds = news_data.get("motds") or []
+        if motds:
+            motd_title = motds[0].get("title", "")
+            motd_body = motds[0].get("body", "")
+
+    if not build_str and not news_hash:
         return None
-    build_str = (body.get("data") or {}).get("build")
-    if not build_str:
-        return None
-    release, cl = "?", "?"
-    if "Release-" in build_str:
-        parts = build_str.split("Release-")[1].split("-CL-")
-        if len(parts) == 2:
-            release, cl = parts
-    return {"version": build_str, "release": release, "cl": cl}
+
+    # Composite version: either signal changing means an update happened
+    version = f"{build_str or 'unknown'}|{news_hash or 'unknown'}"
+    return {
+        "version": version,
+        "build": build_str or "unknown",
+        "release": release,
+        "cl": cl,
+        "news_hash": news_hash or "unknown",
+        "motd_title": motd_title,
+        "motd_body": motd_body,
+    }
 
 
 def fortnite_embed(info):
@@ -103,18 +129,15 @@ def fortnite_embed(info):
         {"name": "Release", "value": info["release"], "inline": True},
         {"name": "Build (CL)", "value": info["cl"], "inline": True},
     ]
-    news = fetch_json("https://fortnite-api.com/v2/news/br")
-    if news:
-        motds = (news.get("data") or {}).get("motds") or []
-        if motds:
-            title = motds[0].get("title", "")
-            body = motds[0].get("body", "")
-            trimmed = body[:250] + ("..." if len(body) > 250 else "")
-            fields.append({
-                "name": "\U0001f4f0 What's New",
-                "value": f"**{title}**\n{trimmed}",
-                "inline": False,
-            })
+    if info.get("motd_title"):
+        trimmed = info["motd_body"][:250]
+        if len(info["motd_body"]) > 250:
+            trimmed += "..."
+        fields.append({
+            "name": "\U0001f4f0 What's New",
+            "value": f"**{info['motd_title']}**\n{trimmed}",
+            "inline": False,
+        })
     fields.append({
         "name": "\U0001f4d6 Patch Notes",
         "value": "[View on Fortnite News](https://www.fortnite.com/news)",
