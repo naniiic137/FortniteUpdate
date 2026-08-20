@@ -273,6 +273,7 @@ def main():
         sys.exit("Missing or invalid CHANNEL_ID environment variable")
 
     state = load_state()
+    send_failures = 0
 
     for game in GAMES:
         slug = game["slug"]
@@ -291,7 +292,10 @@ def main():
 
             if is_new:
                 logger.info("[%s] New version: %s (was %s)", name, version, cached)
-                send_discord_embed(game["embed"](info))
+                if not send_discord_embed(game["embed"](info)):
+                    send_failures += 1
+                    logger.error("[%s] Discord send FAILED — not updating state so it retries next run", name)
+                    continue
             elif cached is None:
                 logger.info("[%s] First run; seeding state with %s", name, version)
             else:
@@ -305,6 +309,9 @@ def main():
             logger.exception("Error checking %s; skipping", name)
 
     save_state(state)
+
+    if send_failures:
+        sys.exit(f"Failed to send {send_failures} Discord notification(s)")
 
 
 if __name__ == "__main__":
