@@ -1,10 +1,9 @@
 {
   "fortnite": {
-    "version": "++Fortnite+Release-42.00-CL-56878558|9d7d270559ddfdecbdb64ca711e3f9e89cc60633",
+    "version": "++Fortnite+Release-42.00-CL-56878558",
     "build": "++Fortnite+Release-42.00-CL-56878558",
     "release": "42.00",
     "cl": "56878558",
-    "news_hash": "9d7d270559ddfdecbdb64ca711e3f9e89cc60633",
     "motd_title": "Fortnite: Override Is Here!",
     "motd_body": "Break the rules. Change the game! Activate Overrides to switch up the game and explore areas inspired by gaming legends like Sonic, Tetris, and Pac-Man as the future of the Island unfolds.",
     "checked_at": "2026-08-22T06:48:45.341803+00:00"

@@ -80,13 +80,14 @@ def send_discord_embed(embed):
 
 # ---------------------------------------------------------------------------
 # Game: Fortnite
-# APIs: /v2/aes (build version) + /v2/news/br (content hash) — both free, no key
-# AES alone only updates with major client patches; the news hash catches
-# content updates, season launches, and hotfixes that don't change AES keys.
+# API: /v2/aes (build version) — free, no key
+# The AES build string changes only on actual client patches.  News data from
+# /v2/news/br is fetched for embed flavour text but NOT used for version
+# comparison — the news hash rotates too frequently (shop/MOTD changes) and
+# would cause false-positive notifications.
 # ---------------------------------------------------------------------------
 
 def fortnite_check():
-    # AES endpoint tracks client build version (major patches only)
     build_str, release, cl = None, "?", "?"
     body = fetch_json("https://fortnite-api.com/v2/aes")
     if body:
@@ -96,29 +97,22 @@ def fortnite_check():
             if len(parts) == 2:
                 release, cl = parts
 
-    # News endpoint tracks content/season updates that don't always change AES
-    news_hash = None
+    if not build_str:
+        return None
+
     motd_title, motd_body = "", ""
     news = fetch_json("https://fortnite-api.com/v2/news/br")
     if news:
-        news_data = news.get("data") or {}
-        news_hash = news_data.get("hash")
-        motds = news_data.get("motds") or []
+        motds = (news.get("data") or {}).get("motds") or []
         if motds:
             motd_title = motds[0].get("title", "")
             motd_body = motds[0].get("body", "")
 
-    if not build_str and not news_hash:
-        return None
-
-    # Composite version: either signal changing means an update happened
-    version = f"{build_str or 'unknown'}|{news_hash or 'unknown'}"
     return {
-        "version": version,
-        "build": build_str or "unknown",
+        "version": build_str,
+        "build": build_str,
         "release": release,
         "cl": cl,
-        "news_hash": news_hash or "unknown",
         "motd_title": motd_title,
         "motd_body": motd_body,
     }
