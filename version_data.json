@@ -4,20 +4,20 @@
     "build": "++Fortnite+Release-42.00-CL-56878558",
     "release": "42.00",
     "cl": "56878558",
-    "motd_title": "Fortnite: Override Is Here!",
-    "motd_body": "Break the rules. Change the game! Activate Overrides to switch up the game and explore areas inspired by gaming legends like Sonic, Tetris, and Pac-Man as the future of the Island unfolds.",
-    "checked_at": "2026-09-03T03:52:09.073941+00:00"
+    "motd_title": "Batman Comes to LEGO Odyssey",
+    "motd_body": "Glide into a world of adventure with Batman! Explore Gotham City locations and complete quests to unlock Bat-Gear and vehicles like the 1989 Batmobile. Then, experiment with brand-new bricks and recruit Batman as a Villager to build like (and with) a hero!",
+    "checked_at": "2026-09-03T10:57:45.656580+00:00"
   },
   "valorant": {
     "version": "13.05.00.5350494",
     "release": "13.05",
     "build_date": "2026-08-20T23:51:14Z",
-    "checked_at": "2026-09-03T03:52:09.170918+00:00"
+    "checked_at": "2026-09-03T10:57:45.783357+00:00"
   },
   "cs2": {
     "version": "1841579228676851",
     "title": "Counter-Strike 2 Update",
     "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1841579228676851",
-    "checked_at": "2026-09-03T03:52:09.244562+00:00"
+    "checked_at": "2026-09-03T10:57:45.998329+00:00"
   }
 }
