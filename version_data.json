@@ -1,23 +1,23 @@
 {
   "fortnite": {
-    "version": "++Fortnite+Release-42.00-CL-56878558",
-    "build": "++Fortnite+Release-42.00-CL-56878558",
-    "release": "42.00",
-    "cl": "56878558",
+    "version": "++Fortnite+Release-42.10-CL-57566230",
+    "build": "++Fortnite+Release-42.10-CL-57566230",
+    "release": "42.10",
+    "cl": "57566230",
     "motd_title": "Batman Comes to LEGO Odyssey",
     "motd_body": "Glide into a world of adventure with Batman! Explore Gotham City locations and complete quests to unlock Bat-Gear and vehicles like the 1989 Batmobile. Then, experiment with brand-new bricks and recruit Batman as a Villager to build like (and with) a hero!",
-    "checked_at": "2026-09-03T10:57:45.656580+00:00"
+    "checked_at": "2026-09-03T16:10:24.826155+00:00"
   },
   "valorant": {
     "version": "13.05.00.5350494",
     "release": "13.05",
     "build_date": "2026-08-20T23:51:14Z",
-    "checked_at": "2026-09-03T10:57:45.783357+00:00"
+    "checked_at": "2026-09-03T16:10:25.369930+00:00"
   },
   "cs2": {
     "version": "1841579228676851",
     "title": "Counter-Strike 2 Update",
     "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1841579228676851",
-    "checked_at": "2026-09-03T10:57:45.998329+00:00"
+    "checked_at": "2026-09-03T16:10:25.449259+00:00"
   }
 }
