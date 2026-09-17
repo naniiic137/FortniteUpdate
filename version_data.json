@@ -4,20 +4,20 @@
     "build": "++Fortnite+Release-42.20-CL-58011042",
     "release": "42.20",
     "cl": "58011042",
-    "motd_title": "Wield the Kingdom Key",
-    "motd_body": "Take up Sora's iconic Kingdom Key and fight your way to victory like a true hero of light!",
-    "checked_at": "2026-09-17T16:38:34.100370+00:00"
+    "motd_title": "Batman Comes to LEGO Odyssey",
+    "motd_body": "Glide into a world of adventure with Batman! Explore Gotham City locations and complete quests to unlock Bat-Gear and vehicles like the 1989 Batmobile. Then, experiment with brand-new bricks and recruit Batman as a Villager to build like (and with) a hero!",
+    "checked_at": "2026-09-17T21:09:27.505267+00:00"
   },
   "valorant": {
     "version": "13.05.00.5350494",
     "release": "13.05",
     "build_date": "2026-08-20T23:51:14Z",
-    "checked_at": "2026-09-17T16:38:34.228071+00:00"
+    "checked_at": "2026-09-17T21:09:27.646943+00:00"
   },
   "cs2": {
     "version": "1843481262690556",
     "title": "Counter-Strike 2 Update",
     "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1843481262690556",
-    "checked_at": "2026-09-17T16:38:34.648663+00:00"
+    "checked_at": "2026-09-17T21:09:27.841164+00:00"
   }
 }
