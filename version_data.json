@@ -4,20 +4,20 @@
     "build": "++Fortnite+Release-42.20-CL-58011042",
     "release": "42.20",
     "cl": "58011042",
-    "motd_title": "Fortnite: Override Is Here!",
-    "motd_body": "Break the rules. Change the game! Activate Overrides to switch up the game and explore areas inspired by gaming legends like Sonic, Tetris, and Pac-Man as the future of the Island unfolds.",
-    "checked_at": "2026-09-20T15:47:22.528720+00:00"
+    "motd_title": "Live - Champion Focus FNCS Cup",
+    "motd_body": "Celebrate FNCS by competing in the Solo Battle Royale or Solo Zero Build Champion Focus Cup now! Top regional performers will receive the Champion Focus Bundle. Find additional details in the Compete Tab.",
+    "checked_at": "2026-09-20T20:35:03.447763+00:00"
   },
   "valorant": {
     "version": "13.05.00.5350494",
     "release": "13.05",
     "build_date": "2026-08-20T23:51:14Z",
-    "checked_at": "2026-09-20T15:47:22.664929+00:00"
+    "checked_at": "2026-09-20T20:35:03.511496+00:00"
   },
   "cs2": {
     "version": "1843481262690556",
     "title": "Counter-Strike 2 Update",
     "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1843481262690556",
-    "checked_at": "2026-09-20T15:47:22.836168+00:00"
+    "checked_at": "2026-09-20T20:35:03.649238+00:00"
   }
 }
