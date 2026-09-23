@@ -1,0 +1,23 @@
+{
+  "fortnite": {
+    "version": "++Fortnite+Release-42.20-CL-58011042",
+    "build": "++Fortnite+Release-42.20-CL-58011042",
+    "release": "42.20",
+    "cl": "58011042",
+    "motd_title": "Fortnite: Override Is Here!",
+    "motd_body": "Break the rules. Change the game! Activate Overrides to switch up the game and explore areas inspired by gaming legends like Sonic, Tetris, and Pac-Man as the future of the Island unfolds.",
+    "checked_at": "2026-09-23T16:32:28.793500+00:00"
+  },
+  "valorant": {
+    "version": "13.05.00.5350494",
+    "release": "13.05",
+    "build_date": "2026-08-20T23:51:14Z",
+    "checked_at": "2026-09-23T16:32:28.897899+00:00"
+  },
+  "cs2": {
+    "version": "1844751498216924",
+    "title": "Counter-Strike 2 Update",
+    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844751498216924",
+    "checked_at": "2026-09-23T16:32:29.086003+00:00"
+  }
+}
