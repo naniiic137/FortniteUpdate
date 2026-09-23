@@ -4,26 +4,29 @@ A Discord bot that monitors **Fortnite**, **VALORANT**, and **CS2** for game upd
 
 ## How It Works
 
-Every 6 hours, a GitHub Actions cron job runs `check_update.py`. The script loops through each registered game, hits its public API for the current version, and compares against the last-seen version stored in `version_data.json`. When a version changes, it posts a rich embed to your Discord channel. No always-on server required — runs **for free**.
+Every 6 hours, a GitHub Actions cron job runs `check_update.py`. The script loops through each registered game, asks its public API for the current version, and compares it with the last-seen version stored in `version_data.json`. When a version changes, it posts a rich embed to your Discord channel through the Discord REST API. No always-on server is needed, so it runs **for free** on GitHub Actions.
 
 | Game | API | Auth | What It Detects |
 |------|-----|------|-----------------|
 | Fortnite | [fortnite-api.com](https://fortnite-api.com) `/v2/aes` | None | Build version changes |
 | VALORANT | [valorant-api.com](https://valorant-api.com) `/v1/version` | None | Client version changes |
-| CS2 | [Steam API](https://api.steampowered.com) `ISteamApps/UpToDateCheck` | None | Required server version changes |
+| CS2 | [Steam Web API](https://api.steampowered.com) `ISteamNews/GetNewsForApp` (app 730) | None | New Steam news posts tagged `patchnotes` |
 
 ## Project Structure
 
 ```
 game-update-bot/
-├── check_update.py                        # Multi-game update checker
-├── bot.py                                 # Legacy always-on Fortnite bot (optional)
-├── .github/workflows/game-update-check.yml   # Cron schedule
-├── version_data.json                      # Last-seen versions (committed by workflow)
-├── requirements.txt                       # Python dependencies
-├── .env.example                           # Example environment variables
+├── check_update.py                           # Multi-game update checker (runs once per job)
+├── .github/workflows/game-update-check.yml   # Cron schedule + state handling
+├── tests/test_check_update.py                # Offline tests (mocked APIs, no Discord)
+├── requirements.txt                          # Python dependencies
+├── .env.example                              # Example environment variables
 └── README.md
 ```
+
+### Where the state is kept
+
+The last-seen versions (`version_data.json`) live on a separate **`state` branch** that holds only that file. At the start of each run the workflow loads the file from that branch. At the end it commits it back, and only if a version actually changed. The `main` branch therefore contains only code, with no bot commits every 6 hours. If the `state` branch is deleted, the next run recreates it and re-seeds the versions without sending notifications.
 
 ---
 
@@ -114,8 +117,16 @@ Edit the `cron` line in `.github/workflows/game-update-check.yml` (UTC):
 
 ## Test Locally
 
+Offline unit tests (the APIs and Discord are mocked):
+
 ```powershell
 pip install -r requirements.txt
+python -m unittest discover tests -v
+```
+
+A real run against the APIs. It posts to Discord if a version changed since the local `version_data.json`; on the very first run it only seeds the file:
+
+```powershell
 $env:DISCORD_TOKEN="your_bot_token"
 $env:CHANNEL_ID="your_channel_id"
 python check_update.py
@@ -133,4 +144,9 @@ python check_update.py
 - All APIs are **free and require no API keys**.
 - Each game is checked independently — if one API is down, the others still run.
 - The bot only reports **version/build changes**, not in-game events (shop rotations, etc.).
-- `bot.py` is the old always-on Fortnite-only bot, kept for reference.
+- If a Discord message fails to send, that game's stored version is not updated, so the notification is retried on the next run.
+- The project started as an always-on Fortnite-only bot (`bot.py`, run on a Procfile host). It was replaced by this scheduled multi-game checker, and the old bot was removed; it remains in the git history.
+
+## License
+
+© 2026 Hamza Ben Ismail. All rights reserved.

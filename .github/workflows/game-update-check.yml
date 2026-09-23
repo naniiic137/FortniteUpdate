@@ -7,11 +7,11 @@ on:
   # Lets you trigger a run manually from the Actions tab to test it
   workflow_dispatch:
 
-# Needed so the workflow can commit the updated version_data.json back
+# Needed so the workflow can push version_data.json to the "state" branch
 permissions:
   contents: write
 
-# Prevent overlapping runs from racing on the committed state file
+# Prevent overlapping runs from racing on the saved state
 concurrency:
   group: game-update-check
   cancel-in-progress: false
@@ -22,6 +22,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      # The last-seen versions live on a separate "state" branch so the bot's
+      # bookkeeping commits never clutter the main branch history.
+      - name: Load saved state
+        run: |
+          if git fetch --quiet --depth=1 origin state; then
+            git show FETCH_HEAD:version_data.json > version_data.json
+            echo "Loaded version_data.json from the state branch."
+          else
+            echo "No state branch yet: this run seeds it (no notifications on the first run)."
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -38,14 +49,32 @@ jobs:
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
         run: python check_update.py
 
-      - name: Commit updated version state
+      # Also runs when the check exits with an error (e.g. one Discord send failed),
+      # so games that were notified successfully are not announced twice.
+      - name: Save state to the state branch
+        if: success() || failure()
         run: |
+          if [ ! -f version_data.json ]; then
+            echo "No state file produced; nothing to save."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add version_data.json
-          if git diff --staged --quiet; then
-            echo "No version change to commit."
+          STATE_DIR="$RUNNER_TEMP/state"
+          if git fetch --quiet --depth=1 origin state; then
+            git worktree add --quiet --detach "$STATE_DIR" FETCH_HEAD
           else
-            git commit -m "Update game version state [skip ci]"
-            git push
+            # First run: create the branch with no history, containing only the state file
+            git worktree add --quiet --detach "$STATE_DIR"
+            git -C "$STATE_DIR" checkout --quiet --orphan state
+            git -C "$STATE_DIR" rm -r -q -f .
+          fi
+          cp version_data.json "$STATE_DIR/version_data.json"
+          git -C "$STATE_DIR" add version_data.json
+          if git -C "$STATE_DIR" diff --staged --quiet; then
+            echo "No version change to save."
+          else
+            git -C "$STATE_DIR" commit --quiet -m "Update game version state"
+            git -C "$STATE_DIR" push --quiet origin HEAD:refs/heads/state
+            echo "Saved new state to the state branch."
           fi

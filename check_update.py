@@ -49,7 +49,7 @@ def fetch_json(url):
 
 def load_state():
     if os.path.exists(STATE_FILE):
-        with open(STATE_FILE) as f:
+        with open(STATE_FILE, encoding="utf-8") as f:
             data = json.load(f)
         if "version" in data:
             data = {"fortnite": data}
@@ -59,8 +59,9 @@ def load_state():
 
 
 def save_state(state):
-    with open(STATE_FILE, "w") as f:
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
+        f.write("\n")
 
 
 def send_discord_embed(embed):
@@ -294,10 +295,13 @@ def main():
                 logger.info("[%s] First run; seeding state with %s", name, version)
             else:
                 logger.info("[%s] No update (current: %s)", name, version)
+                # Leave the stored entry untouched so the state file only changes
+                # when a version actually changes (no commit on quiet runs).
+                continue
 
             state[slug] = {
                 **info,
-                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "seen_at": datetime.now(timezone.utc).isoformat(),
             }
         except Exception:
             logger.exception("Error checking %s; skipping", name)
