@@ -9,15 +9,15 @@
     "checked_at": "2026-09-23T16:32:28.793500+00:00"
   },
   "valorant": {
-    "version": "13.05.00.5350494",
-    "release": "13.05",
-    "build_date": "2026-08-20T23:51:14Z",
-    "checked_at": "2026-09-23T16:32:28.897899+00:00"
+    "version": "13.06.00.5435758",
+    "release": "13.06",
+    "build_date": "2026-09-03T00:14:05Z",
+    "seen_at": "2026-09-24T04:07:42.360542+00:00"
   },
   "cs2": {
-    "version": "1844751498216924",
+    "version": "1844751498219795",
     "title": "Counter-Strike 2 Update",
-    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844751498216924",
-    "checked_at": "2026-09-23T16:32:29.086003+00:00"
+    "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1844751498219795",
+    "seen_at": "2026-09-24T04:07:42.784569+00:00"
   }
 }
